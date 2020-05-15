@@ -3,10 +3,113 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 )
+
+//Constants
+const boardSize = 171
+
+//Validating the input file.
+//This function uses multiple tests to check if
+//the provided file contents represent a
+//solvable Sudoku board.
+func validator(input string) bool {
+
+	//Variables
+	rowCount := 0
+	testPassed := 0
+	isValid := false
+	var line []string
+	lineCount := 0
+	test3 := 0
+
+	//Test 1
+	//Checks if the file contains the required number
+	//of characters needed for a 9x9 board. This is
+	//done by finding the size of the file contents.
+
+	//Opens file and checks for errors.
+	b, err := ioutil.ReadFile(input)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	//Converts file contents from bytes to a string.
+	str := string(b)
+
+	//Prints error message if the string containing
+	//the file contents is not equal to 171.
+	if len(str) != boardSize {
+		fmt.Println("Error: The file contents are not valid. Please use a file with" +
+			"81 integers. (Blanks should be represented with zeros)")
+
+	} else {
+		testPassed++
+	}
+
+	//Test 2
+	//Checks if the board is organized in a 9x9
+	//configuration. This is done by counting
+	//the number of lines that contain the file's
+	//contents.
+
+	//Opens file and checks for errors.
+	file, err := os.Open(input)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	//For loop reads file line by line.
+	for scanner.Scan() {
+		//Adds a line from the file to a string array.
+		line = append(line, scanner.Text())
+
+		//Test 3
+		//Each row is also analyzed to
+		//ensure that the board only contains integers
+		//0 through 9.
+		str := strings.ReplaceAll(line[lineCount], " ", "")
+		//Checks if the given string contains an integer.
+		if _, err := strconv.Atoi(str); err == nil {
+			test3++
+		}
+
+		lineCount++
+		rowCount++
+	}
+
+	//Prints error message if the board does not have
+	//nine rows.
+	if rowCount == 9 {
+		testPassed++
+	} else {
+		fmt.Println("Error: The file contents are not valid. Please organize file contents" +
+			"into a 9x9 board with spaces. (Blanks should be represented with zeros)")
+	}
+
+	//Prints error message if the board contains
+	//a non-integer.
+	if test3 == 9 {
+		testPassed++
+	} else {
+		fmt.Println("Error: The file contents are not valid. Please submit a file that only contains" +
+			"the integers 0 through 9.")
+	}
+
+	//The board is determined to be solvable if
+	//it passes all the tests.
+	if testPassed == 3 {
+		isValid = true
+	}
+
+	return isValid
+}
 
 func parseInput(input string) [9][9]int {
 	file, err := os.Open(input)
@@ -28,7 +131,6 @@ func parseInput(input string) [9][9]int {
 	for i := 0; i < 9; i++ {
 		newlines = append(newlines, strings.ReplaceAll(lines[i], " ", ""))
 	}
-	//fmt.Println(newlines)
 
 	board := [9][9]int{}
 
@@ -41,61 +143,8 @@ func parseInput(input string) [9][9]int {
 			board[row][col] = i1
 		}
 	}
-	//fmt.Println(board)
+
 	return board
-}
-
-func printBoard(board [9][9]int) {
-	fmt.Println("+-------+-------+-------+")
-	for row := 0; row < 9; row++ {
-		fmt.Print("| ")
-		for col := 0; col < 9; col++ {
-			if col == 3 || col == 6 {
-				fmt.Print("| ")
-			}
-			fmt.Printf("%d ", board[row][col])
-			if col == 8 {
-				fmt.Print("|")
-			}
-		}
-		if row == 2 || row == 5 || row == 8 {
-			fmt.Println("\n+-------+-------+-------+")
-		} else {
-			fmt.Println()
-		}
-	}
-}
-
-func main() {
-	// b, err := ioutil.ReadFile("file1.txt") // just pass the file name
-	// if err != nil {
-	// 	fmt.Print(err)
-	// }
-
-	// //fmt.Println(b)   // print the content as 'bytes'
-	// str := string(b) // convert content to a 'string'
-	// x := strings.ReplaceAll(str, " ", "")
-	// y := strings.ReplaceAll(x, "\n", "")
-
-	// fmt.Println(x)
-	// //fmt.Println(len(str))
-
-	// //v := "a"
-
-	// if _, err := strconv.Atoi(y); err == nil {
-	// 	fmt.Printf("%q looks like a number.\n", y)
-	// }
-
-	board := parseInput("file1.txt")
-
-	printBoard(board)
-
-	if backtrack(&board) {
-		fmt.Println("The Sudoku was solved successfully:")
-		printBoard(board)
-	} else {
-		fmt.Printf("The Sudoku can't be solved.")
-	}
 }
 
 func backtrack(board *[9][9]int) bool {
@@ -186,4 +235,57 @@ func hasDuplicates(counter [10]int) bool {
 		}
 	}
 	return false
+}
+
+func main() {
+
+	//Variables
+	var fileName string
+
+	//Initial Output
+	//Prompts user for file name.
+	fmt.Printf("****************Marco's Sudoku Machine****************\n")
+	fmt.Println("Enter name of Sudoku file: ")
+	fmt.Scanln(&fileName)
+	fmt.Println("Reading", fileName)
+
+	//Reading File
+	//Reads file with given name &
+	//checks if file was opened w/o issues.
+	data, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Print(string(data))
+
+	//Validating File
+	//The validator function is used to
+	//check if the file contents contain
+	//a solvable Sudoku board.
+	fmt.Println("Checking if file contains a valid board...")
+
+	if validator(fileName) == true {
+		fmt.Println("The file contains a valid board.")
+
+		board := parseInput(fileName)
+
+		k := 0
+
+		if backtrack(&board) {
+			fmt.Println("The Sudoku was solved successfully:")
+			for row := 0; row < 9; row++ {
+				for col := 0; col < 9; col++ {
+
+					k++
+					fmt.Print(board[row][col], " ")
+					if k == 9 {
+						k = 0
+						fmt.Println("")
+					}
+				}
+			}
+		} else {
+			fmt.Printf("The Sudoku can't be solved.")
+		}
+	}
 }
